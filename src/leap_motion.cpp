@@ -35,7 +35,6 @@
 
 #include "ros/ros.h"
 #include "tf/transform_datatypes.h"
-#include "leap_motion_controller/Set.h"
 #include <visualization_msgs/Marker.h>
 
 namespace leap_motion_controller
