@@ -51,7 +51,7 @@ class Marker_Utility {
 void Marker_Utility::createMarkers(visualization_msgs::Marker* m1, visualization_msgs::Marker* m2) {
    visualization_msgs::Marker* markers[] = {m1, m2};
    for (int i = 0; i <= 1; i++) {
-      markers[i]->header.frame_id = "camerafront";
+      markers[i]->header.frame_id = "frontframe";
       markers[i]->header.stamp = ros::Time::now();
       markers[i]->ns = "leapmotion";
       markers[i]->id = i;
