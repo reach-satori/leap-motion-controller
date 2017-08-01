@@ -163,8 +163,6 @@ void LeapListener::onFrame(const Leap::Controller& controller)
             << ", gestures: " << work_frame.gestures().count() << std::endl;
   
   Leap::HandList hands_in_frame = work_frame.hands();			// get HandList from frame
-  ros_msg.left_hand.is_present = false;					// by default set the presence of both hands false in ros_msg;
-  ros_msg.right_hand.is_present = false;
   if (hands_in_frame.count() > 2)					// if, for some reason, there are more than 2 hands, that's NOT OK, imho
     ROS_INFO("WHAT? There are more than 2 hands in the frame - that's way too many hands! Going to pretend that there are no hands until next frame.");
   else if (hands_in_frame.count() > 0)					// if there are more than 0 hands
@@ -174,148 +172,56 @@ void LeapListener::onFrame(const Leap::Controller& controller)
    {
       // If Hand is left
       if (hands_in_frame[i].isLeft())
-      {
-	ros_msg.left_hand.is_present = true;				// set left_hand.is_present TRUE
-	left_hand = hands_in_frame[i];					// set this hand as left_hand
+         {
+         left_hand = hands_in_frame[i];					// set this hand as left_hand
+         setMarker(lptr);                             // sets only positions x, y, z, for now
 
-	// FYI
-	std::cout << std::fixed << std::setprecision(1)
-		  << "Left hand  sphere radius: " << left_hand.sphereRadius()
-		  << std::fixed << std::setprecision(2)
-		  << " and pinch strength: " << left_hand.pinchStrength() << std::endl;
+      // FYI
+         std::cout << std::fixed << std::setprecision(1)
+           << "Left hand  sphere radius: " << left_hand.sphereRadius()
+           << std::fixed << std::setprecision(2)
+           << " and pinch strength: " << left_hand.pinchStrength() << std::endl;
 
-	// Convert palm position into meters and copy to ros_msg.left_palm_pos
-	ros_msg.left_hand.palm_pose.header = ros_msg.header;		// use the same header as in Set
-	ros_msg.left_hand.palm_pose.pose.position.x = lpf_lhx.filter( left_hand.palmPosition().x/1000 );
-	ros_msg.left_hand.palm_pose.pose.position.y = lpf_lhy.filter( left_hand.palmPosition().y/1000 );
-	ros_msg.left_hand.palm_pose.pose.position.z = lpf_lhz.filter( left_hand.palmPosition().z/1000 );
+      // FYI
+         std::cout << std::fixed << std::setprecision(4)
+           << "           position: x= " << markerL.pose.position.x
+           << " y= " << markerL.pose.position.y
+           << " z= " << markerL.pose.position.z << std::endl;
+         }
+         
+         // If Hand is right
+      else if (hands_in_frame[i].isRight()) {
+         right_hand = hands_in_frame[i];					// set this hand as right_hand
+         setMarker(rptr);
 
-	// FYI
-	std::cout << std::fixed << std::setprecision(4)
-		  << "           position: x= " << ros_msg.left_hand.palm_pose.pose.position.x
-		  << " y= " << ros_msg.left_hand.palm_pose.pose.position.y
-		  << " z= " << ros_msg.left_hand.palm_pose.pose.position.z << std::endl;
-	
-	// Get hand's roll-pitch-yam and convert them into quaternion.
-	// NOTE: Leap Motion roll-pith-yaw is from the perspective of human, so I am mapping it so that roll is about x-, pitch about y-, and yaw about z-axis.
-	float l_yaw = left_hand.palmNormal().roll();
-	float l_roll = left_hand.direction().pitch();
-	float l_pitch = -left_hand.direction().yaw();			// Negating to comply with the right hand rule.
-	// FYI
-	std::cout << std::fixed << std::setprecision(4)
-		  << "           RPY:      R= " << l_roll
-		  << " P= " << l_pitch
-		  << " Y= " << l_yaw << std::endl;
-	ros_msg.left_hand.palm_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(l_roll, l_pitch, l_yaw);
-	
-	// Copy palm velocity to ROS message in meters
-	ros_msg.left_hand.palm_velocity.header = ros_msg.header;		// use the same header as in Set
-	ros_msg.left_hand.palm_velocity.vector.x = left_hand.palmVelocity().x/1000;
-	ros_msg.left_hand.palm_velocity.vector.y = left_hand.palmVelocity().y/1000;
-	ros_msg.left_hand.palm_velocity.vector.z = left_hand.palmVelocity().z/1000;
-	
-	// FYI
-	std::cout << std::fixed << std::setprecision(4)
-		  << "           velocity: x= " << ros_msg.left_hand.palm_velocity.vector.x
-		  << " y= " << ros_msg.left_hand.palm_velocity.vector.y
-		  << " z= " << ros_msg.left_hand.palm_velocity.vector.z << std::endl;
+      // FYI
+         std::cout << std::fixed << std::setprecision(1)
+           << "right hand  sphere radius: " << right_hand.sphereRadius()
+           << std::fixed << std::setprecision(2)
+           << " and pinch strength: " << right_hand.pinchStrength() << std::endl;
 
-	// Put sphere radius and pinch strength into ROS message
-	ros_msg.left_hand.sphere_radius = left_hand.sphereRadius();
-	ros_msg.left_hand.pinch_strength = left_hand.pinchStrength();
-      }
-      
-      // If Hand is right
-      else if (hands_in_frame[i].isRight())
-      {
-	ros_msg.right_hand.is_present = true;				// set right_hand.is_present TRUE
-	right_hand = hands_in_frame[i];					// set this hand as right_hand
-	
-	// FYI
-	std::cout << std::fixed << std::setprecision(1)
-		  << "Right hand sphere radius: " << right_hand.sphereRadius()
-		  << std::fixed << std::setprecision(2)
-		  << " and pinch strength: " << right_hand.pinchStrength() << std::endl;
-		  
-	// Convert palm position into meters and copy to ros_msg.right_palm_pos
-	ros_msg.right_hand.palm_pose.header = ros_msg.header;		// use the same header as in Set
-	ros_msg.right_hand.palm_pose.pose.position.x = lpf_rhx.filter( right_hand.palmPosition().x/1000 );
-	ros_msg.right_hand.palm_pose.pose.position.y = lpf_rhy.filter( right_hand.palmPosition().y/1000 );
-	ros_msg.right_hand.palm_pose.pose.position.z = lpf_rhz.filter( right_hand.palmPosition().z/1000 );
-	
-	// FYI
-	std::cout << std::fixed << std::setprecision(4)
-		  << "           position: x= " << ros_msg.right_hand.palm_pose.pose.position.x
-		  << " y= " << ros_msg.right_hand.palm_pose.pose.position.y
-		  << " z= " << ros_msg.right_hand.palm_pose.pose.position.z << std::endl;
-
-	// Get hand's roll-pitch-yaw and convert them into quaternion.
-	// NOTE: Leap Motion roll-pitch-yaw is from the perspective of human, so I am mapping it so that roll is about x-, pitch about y-, and yaw about z-axis.
-	float r_yaw = right_hand.palmNormal().roll();
-	float r_roll = right_hand.direction().pitch();
-	float r_pitch = -right_hand.direction().yaw();			// Negating to comply with the right hand rule.
-	// FYI
-	std::cout << std::fixed << std::setprecision(4)
-		  << "           RPY:      R= " << r_roll
-		  << " P= " << r_pitch
-		  << " Y= " << r_yaw << std::endl;
-	ros_msg.right_hand.palm_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(r_roll, r_pitch, r_yaw);
-
-	// Copy palm velocity to ROS message in meters
-	ros_msg.right_hand.palm_velocity.header = ros_msg.header;		// use the same header as in Set
-	ros_msg.right_hand.palm_velocity.vector.x = right_hand.palmVelocity().x/1000;
-	ros_msg.right_hand.palm_velocity.vector.y = right_hand.palmVelocity().y/1000;
-	ros_msg.right_hand.palm_velocity.vector.z = right_hand.palmVelocity().z/1000;
-	
-	// FYI
-	std::cout << std::fixed << std::setprecision(4)
-		  << "           velocity: x= " << ros_msg.right_hand.palm_velocity.vector.x
-		  << " y= " << ros_msg.right_hand.palm_velocity.vector.y
-		  << " z= " << ros_msg.right_hand.palm_velocity.vector.z << std::endl;
-
-	// Put sphere radius and pinch strength into ROS message
-	ros_msg.right_hand.sphere_radius = right_hand.sphereRadius();
-	ros_msg.right_hand.pinch_strength = right_hand.pinchStrength();
-      }
+      // FYI
+         std::cout << std::fixed << std::setprecision(4)
+           << "           position: x= " << markerR.pose.position.x
+           << " y= " << markerR.pose.position.y
+           << " z= " << markerR.pose.position.z << std::endl;
+         }
    } // for
   } // else if (hands_in_frame.count() > 0)
-  
-  // Other information about the hand state
-  ros_msg.extended_fingers = work_frame.fingers().extended().count();
-
-  // Getting gestures
-  // TODO Do I actually need gestures in this ROS driver or at all. If the answer is YES, perhaps add some other gestures, e.g. swipe and circle.
-  // Maybe enable gestures with a YAML file
-  // leap_motion_controller_data:
-  //	-enable_key_tap:	true
-  //	-enable_swipe:		true
-  // etc ...
-  Leap::GestureList gestures_in_frame = work_frame.gestures();
-  ros_msg.left_hand.key_tap = false;					// by default set KEY_TAP gestures to false on both hands
-  ros_msg.right_hand.key_tap = false;
-  
-  // Since only KEY_TAP gestures have been enabled, any detected gesure is a KEY_TAP gesture.
-  for (int j = 0; j < gestures_in_frame.count(); j++)			// go through all the gestures in the list
-  {
-    // if the hand of j-th gesture is valid and left
-    if (gestures_in_frame[j].hands()[0].isValid() && gestures_in_frame[j].hands()[0].isLeft())
-    {
-      ros_msg.left_hand.key_tap = true;					// report that there was a lefthand_key_tap
-    } // end if
-    // if the hand of j-th gesture is valid and right
-    if (gestures_in_frame[j].hands()[0].isValid() && gestures_in_frame[j].hands()[0].isRight())
-    {
-      ros_msg.right_hand.key_tap = true;				// report that there was a righthand_key_tap
-    } // end if
-  } // end for
    
   // Publish the ROS message based on this Leap Motion Controller frame.
-  ros_publisher_.publish( ros_msg );
+  ros_publisher_.publish( markerR );
+  ros_publisher_.publish( markerL );
 
   // Throttle the loop
   ros::Duration(0.1).sleep();
  
 } // end LeapListener::onFrame()
+
+void setMarker(visualization_msgs::Marker* mptr); {
+   mptr->pose.position.x = lpf_lhx.filter(left_hand.palmPosition().x/1000);
+   mptr->pose.position.y = lpf_lhy.filter(left_hand.palmPosition().y/1000);
+   mptr->pose.position.z = lpf_lhz.filter(left_hand.palmPosition().z/1000);
 
 void createMarker(visualization_msgs::Marker* m1, visualization_msgs::Marker* m2) {
    visualization_msgs::Marker* markers[] = {m1, m2}
