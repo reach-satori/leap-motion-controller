@@ -85,7 +85,7 @@ class lpf
   public:
    lpf();
    double filter(const double& new_msrmt);
-   double c_ = 4.;	// Related to the cutoff frequency of the filter.
+   double c_ = 1.;	// Related to the cutoff frequency of the filter.
 			// c=1 results in a cutoff at 1/4 of the sampling rate.
 			// See bitbucket.org/AndyZe/pid if you want to get more sophisticated.
 			// Larger c --> trust the filtered data more, trust the measurements less.
@@ -229,9 +229,9 @@ void LeapListener::onFrame(const Leap::Controller& controller)
          // If Hand is right
       else if (hands_in_frame[i].isRight()) {
          right_hand = hands_in_frame[i];					// set this hand as right_hand
-         rptr->pose.position.x = lpf_lhx.filter(right_hand.palmPosition().x/1000);
-         rptr->pose.position.y = lpf_lhy.filter(right_hand.palmPosition().y/1000);
-         rptr->pose.position.z = lpf_lhz.filter(right_hand.palmPosition().z/1000);
+         rptr->pose.position.x = lpf_rhx.filter(right_hand.palmPosition().x/1000);
+         rptr->pose.position.y = lpf_rhy.filter(right_hand.palmPosition().y/1000);
+         rptr->pose.position.z = lpf_rhz.filter(right_hand.palmPosition().z/1000);
 
       // FYI
          std::cout << std::fixed << std::setprecision(1)
