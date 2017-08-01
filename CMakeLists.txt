@@ -29,7 +29,5 @@ include_directories(
 
 add_executable(leap_motion src/leap_motion.cpp)
 
-add_dependencies(leap_motion leap_motion_controller_gencpp)
-
 target_link_libraries(leap_motion ${catkin_LIBRARIES} libLeap.so)
 
